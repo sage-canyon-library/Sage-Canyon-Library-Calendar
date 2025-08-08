@@ -325,6 +325,14 @@
             color: white;
         }
     </style>
+    <!-- Supabase client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // TODO: Replace with your Supabase project values
+        const SUPABASE_URL = 'https://mowxzlfnydazxlhrenjn.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vd3h6bGZueWRhenhsaHJlbmpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2MjIwNzksImV4cCI6MjA3MDE5ODA3OX0.5ZA8CvQ0vT_f-zGe40stJydhrTPk9e8A9tXtxIN0Z5o';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
 </head>
 <body>
     <div class="header">
@@ -379,7 +387,8 @@
             <div style="margin-top: 5px; font-size: 10px; color: #B3A369;">
                 <span id="storage-status">Checking storage...</span>
                 <br>
-                
+                <button class="nav-button" onclick="signIn()">Sign in</button>
+                <button class="nav-button" onclick="signOut()">Sign out</button>
             </div>
         </div>
     </div>
@@ -417,29 +426,59 @@
     <script>
         console.log('Dynamic Calendar System Starting...');
         
-        const BASE_URL = 'http://127.0.0.1:5000'; // Your Flask backend URL
         let currentBooking = {};
         let bookings = {}; // This will now store bookings fetched from the backend
         let currentWeekStart = new Date(2025, 7, 11); // Starting with August 11, 2025 (Monday)
 
-        // Fetch bookings from the backend
+        // Auth helpers
+        async function signIn() {
+            const email = prompt('Enter your email');
+            if (!email) return;
+            const { error } = await supabase.auth.signInWithOtp({
+                email,
+                options: {
+                    // Redirect back to the current page after clicking the magic link
+                    emailRedirectTo: window.location.href
+                }
+            });
+            alert(error ? error.message : 'Check your email for the login link.');
+        }
+
+        async function signOut() {
+            await supabase.auth.signOut();
+            alert('Signed out');
+        }
+
+        supabase.auth.onAuthStateChange((_event, session) => {
+            window.userSession = session;
+        });
+
+        // Fetch bookings from Supabase
         async function fetchBookings() {
             try {
-                const response = await fetch(`${BASE_URL}/bookings`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                bookings = {}; // Clear existing bookings
-                data.forEach(booking => {
-                    const bookingKey = `${booking.date}-${booking.period}-${booking.slotType}`;
-                    bookings[bookingKey] = booking;
+                const { data, error } = await supabase
+                    .from('bookings')
+                    .select('*');
+                if (error) throw error;
+
+                bookings = {};
+                data.forEach(b => {
+                    const bookingKey = `${b.date}-${b.period}-${b.slot_type}`;
+                    bookings[bookingKey] = {
+                        id: b.id,
+                        date: b.date,
+                        period: b.period,
+                        slotType: b.slot_type,
+                        timeRange: b.time_range,
+                        teacherName: b.teacher_name,
+                        classSubject: b.class_subject,
+                        notes: b.notes || ''
+                    };
                 });
-                console.log('Loaded bookings from backend:', bookings);
+                console.log('Loaded bookings from Supabase:', bookings);
                 updateStorageStatus();
             } catch (error) {
                 console.error('Error fetching bookings:', error);
-                // Optionally, display an error message to the user
                 const statusElement = document.getElementById('storage-status');
                 if (statusElement) {
                     statusElement.textContent = '❌ Error loading bookings';
@@ -634,9 +673,7 @@
                 const conflicts = checkForConflicts(date, period, slotType);
                 
                 if (conflicts.length > 0) {
-                    let conflictMessage = 'This time slot conflicts with existing bookings:
-
-';
+                    let conflictMessage = `This time slot conflicts with existing bookings:\n\n`;
                     conflicts.forEach(conflict => {
                         conflictMessage += `• ${conflict.teacherName} - ${conflict.classSubject} (${conflict.slotType})
 `;
@@ -670,58 +707,46 @@
                 return;
             }
             
-            const bookingData = {
+            // Require sign-in for writes
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { alert('Please sign in to make changes.'); return; }
+
+            const row = {
                 date: currentBooking.date,
                 period: currentBooking.period,
-                slotType: currentBooking.slotType,
-                timeRange: currentBooking.timeRange,
-                teacherName,
-                classSubject,
-                notes,
-                timestamp: new Date().toISOString()
+                slot_type: currentBooking.slotType,
+                time_range: currentBooking.timeRange,
+                teacher_name: teacherName,
+                class_subject: classSubject,
+                notes
             };
-
-            let response;
-            let message;
 
             try {
                 if (currentBooking.id) {
-                    // Update existing booking
-                    response = await fetch(`${BASE_URL}/bookings/${currentBooking.id}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(bookingData),
-                    });
-                    message = 'Booking updated!';
+                    const { error } = await supabase
+                        .from('bookings')
+                        .update(row)
+                        .eq('id', currentBooking.id);
+                    if (error) throw error;
+                    await generateCalendar();
+                    alert(`Booking updated!\n\nTeacher: ${teacherName}\nClass: ${classSubject}\nDate: ${formatDateForDisplay(currentBooking.date)}`);
+                    closeBookingModal();
                 } else {
-                    // Create new booking
-                    response = await fetch(`${BASE_URL}/bookings`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(bookingData),
-                    });
-                    message = 'Booking confirmed!';
+                    const { error } = await supabase
+                        .from('bookings')
+                        .insert([row]);
+                    if (error) throw error;
+                    await generateCalendar();
+                    alert(`Booking confirmed!\n\nTeacher: ${teacherName}\nClass: ${classSubject}\nDate: ${formatDateForDisplay(currentBooking.date)}`);
+                    closeBookingModal();
                 }
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                await generateCalendar(); // Re-fetch and re-render
-                
-                alert(`${message}\n\nTeacher: ${teacherName}\nClass: ${classSubject}\nDate: ${formatDateForDisplay(currentBooking.date)}`);\n                closeBookingModal();
-
             } catch (error) {
                 console.error('Error submitting booking:', error);
                 alert('Failed to save booking. Please try again.');
             }
         }
 
-        // Delete booking
+        // Delete booking (Supabase)
         async function deleteBooking() {
             if (!currentBooking.id) {
                 alert('No booking selected for deletion.');
@@ -735,14 +760,16 @@
 Teacher: ${existingBooking.teacherName}
 Class: ${existingBooking.classSubject}
 Date: ${formatDateForDisplay(currentBooking.date)}`)) {
-                try {
-                    const response = await fetch(`${BASE_URL}/bookings/${currentBooking.id}`, {
-                        method: 'DELETE',
-                    });
+                // Require sign-in for deletes
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) { alert('Please sign in.'); return; }
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
+                try {
+                    const { error } = await supabase
+                        .from('bookings')
+                        .delete()
+                        .eq('id', currentBooking.id);
+                    if (error) throw error;
 
                     await generateCalendar(); // Re-fetch and re-render
                     alert('Booking deleted successfully!');
@@ -837,6 +864,18 @@ Date: ${formatDateForDisplay(currentBooking.date)}`)) {
         // Initialize
         updateWeekDisplay();
         generateCalendar(); // This now calls fetchBookings internally
+        
+        // Optional: realtime updates so all viewers see changes live
+        try {
+            supabase
+                .channel('bookings-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+                    generateCalendar();
+                })
+                .subscribe();
+        } catch (e) {
+            console.warn('Realtime not enabled or failed to subscribe:', e);
+        }
         
         console.log('Dynamic Calendar System Ready!');
     </script>
