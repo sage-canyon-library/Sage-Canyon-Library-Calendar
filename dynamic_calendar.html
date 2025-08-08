@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sage Canyon Library Scheduler</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #000000;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .header-left {
+            flex: 1;
+        }
+        .header-center {
+            flex: 2;
+            text-align: center;
+        }
+        .header-right {
+            flex: 1;
+        }
+        .title-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+        .header-logo {
+            height: 90px;
+            width: auto;
+            max-width: 110px;
+        }
+        .title-text {
+            text-align: center;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-btn {
+            background-color: #B3A369;
+            color: #000000;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .dropdown-btn:hover {
+            background-color: #9a8a5a;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 400px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1001;
+            border-radius: 8px;
+            padding: 15px;
+            color: #000000;
+            text-align: left;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .dropdown-section {
+            margin-bottom: 15px;
+        }
+        .dropdown-section h4 {
+            margin: 0 0 8px 0;
+            color: #000000;
+            font-size: 14px;
+        }
+        .dropdown-section ol, .dropdown-section ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .dropdown-section li {
+            margin-bottom: 4px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .week-navigation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .nav-button {
+            background-color: #B3A369;
+            color: #000000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .nav-button:hover {
+            background-color: #9a8a5a;
+        }
+        .current-week {
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+        }
+        .calendar-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .calendar-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .calendar-table th, .calendar-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            vertical-align: top;
+        }
+        .calendar-table th {
+            background-color: #000000;
+            color: white;
+            font-weight: bold;
+        }
+        .day-header {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #000000;
+        }
+        .day-info {
+            background-color: #B3A369;
+            color: #000000;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .day-notes {
+            background-color: #A3B2A4;
+            color: #000000;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            margin-top: 2px;
+            display: inline-block;
+        }
+        .booking-slot {
+            width: 100%;
+            padding: 8px;
+            margin: 2px 0;
+            border: 2px solid #A3B2A4;
+            background-color: #A3B2A4;
+            color: #000000;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        .booking-slot:hover {
+            background-color: #8a9a8b;
+            border-color: #8a9a8b;
+        }
+        .booking-slot.second-half {
+            background-color: #B3A369;
+            border-color: #B3A369;
+        }
+        .booking-slot.second-half:hover {
+            background-color: #9a8a5a;
+            border-color: #9a8a5a;
+        }
+        .booking-slot.entire {
+            background-color: #000000 !important;
+            border-color: #000000 !important;
+            color: #FFFFFF !important;
+        }
+        .booking-slot.entire:hover {
+            background-color: #333333 !important;
+            border-color: #333333 !important;
+        }
+        .booking-slot.den-time {
+            background-color: #A3B2A4;
+            border-color: #A3B2A4;
+        }
+        .booking-slot.den-time:hover {
+            background-color: #8a9a8b;
+            border-color: #8a9a8b;
+        }
+        .booking-slot.lunch-period {
+            background-color: #B3A369;
+            border-color: #B3A369;
+        }
+        .booking-slot.lunch-period:hover {
+            background-color: #9a8a5a;
+            border-color: #9a8a5a;
+        }
+        .booking-slot.after-school {
+            background-color: #B3A369;
+            border-color: #B3A369;
+        }
+        .booking-slot.after-school:hover {
+            background-color: #9a8a5a;
+            border-color: #9a8a5a;
+        }
+        .booking-slot.closed {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            color: #ffffff;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .den-time {
+            background-color: #A3B2A4;
+            color: #000000;
+            padding: 8px;
+            margin: 2px 0;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .lunch-period {
+            background-color: #B3A369;
+            color: #000000;
+            padding: 4px;
+            margin: 1px 0;
+            border-radius: 3px;
+            font-size: 8px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .after-school {
+            background-color: #B3A369;
+            color: #000000;
+            padding: 4px;
+            margin: 1px 0;
+            border-radius: 3px;
+            font-size: 8px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 500px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .btn-primary {
+            background-color: #B3A369;
+            color: #000000;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="dropdown">
+                <button class="dropdown-btn">How to use the library scheduler ▼</button>
+                <div class="dropdown-content">
+                    <div class="dropdown-section">
+                        <h4>📅 Booking Time Slots</h4>
+                        <ol>
+                            <li>Click on any available time slot</li>
+                            <li>Enter your name and class/subject</li>
+                            <li>Add any special notes if needed</li>
+                            <li>Click "Save" to confirm your booking</li>
+                            <li>If you no longer need the library, please remove your booking</li>
+                        </ol>
+                    </div>
+                    <div class="dropdown-section">
+                        <h4>📝 Managing Bookings</h4>
+                        <ul>
+                            <li>Click on any booked slot to edit or delete</li>
+                            <li>Use the week navigation arrows to view different weeks</li>
+                            <li>Choose from "First Half," "Second Half," or "Entire Period"</li>
+                        </ul>
+                    </div>
+                    <div class="dropdown-section">
+                        <h4>🍽️ Lunch Periods</h4>
+                        <ul>
+                            <li>Regular days: 1st & 2nd lunch periods available during A3/B7</li>
+                            <li>Wednesday: Lunch period at end of day (1:15-1:45 PM)</li>
+    
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="header-center">
+            <div class="title-container">
+                <img src="SageCanyonMS_CircleMark.png" alt="Sage Canyon Logo" class="header-logo">
+                <div class="title-text">
+                    <h1>Sage Canyon Library Scheduler</h1>
+                    <p>Click on time slots to book the library</p>
+                </div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="week-navigation">
+                <button class="nav-button" onclick="previousWeek()">← Previous Week</button>
+                <span class="current-week" id="current-week">Week of August 18-22, 2025</span>
+                <button class="nav-button" onclick="nextWeek()">Next Week →</button>
+            </div>
+            <div style="margin-top: 5px; font-size: 10px; color: #B3A369;">
+                <span id="storage-status">Checking storage...</span>
+                <br>
+                
+            </div>
+        </div>
+    </div>
+
+    <div class="calendar-container">
+        <div id="calendar-content">
+            <!-- Calendar will be generated dynamically -->
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeBookingModal()">&times;</span>
+            <h2 id="modal-title">Book Library Time</h2>
+            <div id="booking-details"></div>
+            <div class="form-group">
+                <label for="teacherName">Teacher Name:</label>
+                <input type="text" id="teacherName" required>
+            </div>
+            <div class="form-group">
+                <label for="classSubject">Class/Subject:</label>
+                <input type="text" id="classSubject" required>
+            </div>
+            <div class="form-group">
+                <label for="notes">Notes (optional):</label>
+                <textarea id="notes" rows="3"></textarea>
+            </div>
+            <button class="btn btn-primary" id="save-booking-btn" onclick="submitBooking()">Save Booking</button>
+            <button class="btn btn-danger" id="delete-booking-btn" onclick="deleteBooking()" style="display: none;">Delete Booking</button>
+            <button class="btn btn-secondary" onclick="closeBookingModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        console.log('Dynamic Calendar System Starting...');
+        
+        const BASE_URL = 'http://127.0.0.1:5000'; // Your Flask backend URL
+        let currentBooking = {};
+        let bookings = {}; // This will now store bookings fetched from the backend
+        let currentWeekStart = new Date(2025, 7, 11); // Starting with August 11, 2025 (Monday)
+
+        // Fetch bookings from the backend
+        async function fetchBookings() {
+            try {
+                const response = await fetch(`${BASE_URL}/bookings`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                bookings = {}; // Clear existing bookings
+                data.forEach(booking => {
+                    const bookingKey = `${booking.date}-${booking.period}-${booking.slotType}`;
+                    bookings[bookingKey] = booking;
+                });
+                console.log('Loaded bookings from backend:', bookings);
+                updateStorageStatus();
+            } catch (error) {
+                console.error('Error fetching bookings:', error);
+                // Optionally, display an error message to the user
+                const statusElement = document.getElementById('storage-status');
+                if (statusElement) {
+                    statusElement.textContent = '❌ Error loading bookings';
+                    statusElement.style.color = '#dc3545';
+                }
+            }
+        }
+
+        // Check for booking conflicts (logic remains mostly the same, but operates on fetched bookings)
+        function checkForConflicts(date, period, slotType) {
+            const conflicts = [];
+            
+            // console.log(`Checking conflicts for ${date}-${period}-${slotType}`);
+            // console.log('All bookings:', Object.keys(bookings));
+            
+            Object.values(bookings).forEach(booking => {
+                if (booking.date === date && booking.period === period) {
+                    // console.log(`Found matching booking:`, booking);
+                    
+                    // Check for conflicts based on slot types
+                    if (slotType === 'Entire Period' || slotType === 'Entire A3/B7 Period') {
+                        if (booking.slotType.includes('Half') || booking.slotType.includes('Entire')) {
+                            // console.log(`Conflict found: ${slotType} conflicts with ${booking.slotType}`);
+                            conflicts.push(booking);
+                        }
+                    } else if (slotType.includes('Half')) {
+                        if (booking.slotType === 'Entire Period' || booking.slotType === 'Entire A3/B7 Period') {
+                            // console.log(`Conflict found: ${slotType} conflicts with ${booking.slotType}`);
+                            conflicts.push(booking);
+                        }
+                    }
+                }
+            });
+            
+            // console.log(`Conflicts for ${slotType}:`, conflicts.length);
+            return conflicts;
+        }
+
+        // Generate the entire calendar dynamically
+        async function generateCalendar() {
+            console.log('Generating calendar for week starting:', currentWeekStart);
+            await fetchBookings(); // Ensure bookings are loaded before rendering
+            
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+            const timeSlots = [
+                {
+                    name: 'A1/B5',
+                    time: '8:15-9:35',
+                    wednesdayTime: '8:15-9:25',
+                    slots: [
+                        { type: 'First Half', time: '8:15-8:55', wednesdayTime: '8:15-8:50', class: '' },
+                        { type: 'Second Half', time: '8:55-9:35', wednesdayTime: '8:50-9:25', class: 'second-half' },
+                        { type: 'Entire Period', time: '8:15-9:35', wednesdayTime: '8:15-9:25', class: 'entire' }
+                    ]
+                },
+                {
+                    name: 'A2/B6',
+                    time: '10:20-11:35',
+                    wednesdayTime: '9:30-10:40',
+                    slots: [
+                        { type: 'First Half', time: '10:20-10:57', wednesdayTime: '9:30-10:05', class: '' },
+                        { type: 'Second Half', time: '10:57-11:35', wednesdayTime: '10:05-10:40', class: 'second-half' },
+                        { type: 'Entire Period', time: '10:20-11:35', wednesdayTime: '9:30-10:40', class: 'entire' }
+                    ]
+                },
+                {
+                    name: 'A3/B7',
+                    time: '11:35-1:25',
+                    wednesdayTime: '10:50-12:00',
+                    slots: [
+                        { type: 'First Half (Second Lunch)', time: '11:35-12:05', wednesdayTime: '10:50-11:25', class: '' },
+                        { type: 'Second Half (Second Lunch)', time: '12:05-12:30', wednesdayTime: '11:25-12:00', class: 'second-half' },
+                        { type: 'First Half (First Lunch)', time: '12:30-12:55', wednesdayTime: '10:50-11:25', class: '' },
+                        { type: 'Second Half (First Lunch)', time: '12:55-1:25', wednesdayTime: '11:25-12:00', class: 'second-half' },
+                        { type: 'First Half', time: '11:35-12:30', wednesdayTime: '10:50-11:25', class: '' },
+                        { type: 'Second Half', time: '12:30-1:25', wednesdayTime: '11:25-12:00', class: 'second-half' },
+                        { type: 'Entire A3/B7 Period', time: '11:35-1:25', wednesdayTime: '10:50-12:00', class: 'entire' }
+                    ]
+                },
+                {
+                    name: 'A4/B8',
+                    time: '1:30-2:45',
+                    wednesdayTime: '12:05-1:15',
+                    slots: [
+                        { type: 'First Half', time: '1:30-2:07', wednesdayTime: '12:05-12:40', class: '' },
+                        { type: 'Second Half', time: '2:07-2:45', wednesdayTime: '12:40-1:15', class: 'second-half' },
+                        { type: 'Entire Period', time: '1:30-2:45', wednesdayTime: '12:05-1:15', class: 'entire' }
+                    ]
+                }
+            ];
+
+            let calendarHTML = '<table class="calendar-table">';
+            
+            // Generate header
+            calendarHTML += '<thead><tr><th>Time</th>';
+            for (let i = 0; i < 5; i++) {
+                const currentDate = new Date(currentWeekStart);
+                currentDate.setDate(currentWeekStart.getDate() + i);
+                const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+                const day = currentDate.getDate().toString().padStart(2, '0');
+                const dateString = currentDate.toISOString().split('T')[0];
+                const dayType = getDayTypeForDate(currentDate);
+                const notes = getNotesForDate(currentDate);
+                
+                calendarHTML += `<th>${days[i]}<br>${month}/${day}<br><span class="day-info">${dayType}</span>`;
+                if (notes) {
+                    calendarHTML += `<br><span class="day-notes">${notes}</span>`;
+                }
+                calendarHTML += '</th>';
+            }
+            calendarHTML += '</tr></thead><tbody>';
+
+            // Generate time slots
+            timeSlots.forEach(slot => {
+                calendarHTML += `<tr><td class="day-header">${slot.name}</td>`;
+                
+                for (let i = 0; i < 5; i++) {
+                    const currentDate = new Date(currentWeekStart);
+                    currentDate.setDate(currentWeekStart.getDate() + i);
+                    const dateString = currentDate.toISOString().split('T')[0];
+                    
+                    calendarHTML += '<td>';
+                    
+                    slot.slots.forEach(slotType => {
+                        // Handle Wednesday special times
+                        let displayTime = slotType.time;
+                        let displayType = slotType.type;
+                        
+                        if (i === 2) { // Wednesday
+                            displayTime = slotType.wednesdayTime || slotType.time;
+                            
+                            // Skip lunch-specific slots on Wednesday for A3/B7
+                            if (slot.name === 'A3/B7' && slotType.type.includes('Lunch)')) {
+                                return; // Skip this slot
+                            }
+                        } else if (slot.name === 'A3/B7' && (slotType.type === 'First Half' || slotType.type === 'Second Half')) {
+                            // Skip regular First Half and Second Half on non-Wednesday days for A3/B7
+                            return; // Skip this slot
+                        }
+                        
+                        const bookingKey = `${dateString}-${slot.name}-${slotType.type}`;
+                        const booking = bookings[bookingKey];
+                        
+                        if (booking) {
+                            // Booked slot
+                            calendarHTML += `<button class="booking-slot ${slotType.class}" style="background-color: #6c757d; border-color: #495057;" onclick="openBookingModal('${dateString}', '${slot.name}', '${slotType.type}', '${slotType.time}', ${booking.id})">BOOKED<br>${booking.teacherName}<br>${booking.classSubject}</button>`;
+                        } else {
+                            // Check for conflicts
+                            const conflicts = checkForConflicts(dateString, slot.name, slotType.type);
+                            
+                            if (conflicts.length > 0) {
+                                // Conflicting slot - show as unavailable
+                                calendarHTML += `<button class="booking-slot ${slotType.class}" style="background-color: #dc3545; border-color: #721c24; cursor: not-allowed;" disabled title="This slot conflicts with existing bookings">UNAVAILABLE<br>(${displayTime})</button>`;
+                            } else {
+                                // Available slot
+                                calendarHTML += `<button class="booking-slot ${slotType.class}" onclick="openBookingModal('${dateString}', '${slot.name}', '${slotType.type}', '${slotType.time}')">${displayType.toUpperCase()}<br>(${displayTime})</button>`;
+                            }
+                        }
+                    });
+                    
+                    calendarHTML += '</td>';
+                }
+                
+                calendarHTML += '</tr>';
+            });
+
+            calendarHTML += '</tbody></table>';
+            
+            document.getElementById('calendar-content').innerHTML = calendarHTML;
+            console.log('Calendar generated with date-based buttons');
+        }
+
+        // Open booking modal
+        function openBookingModal(date, period, slotType, timeRange, bookingId = null) {
+            console.log('Opening booking modal for:', date, period, slotType, timeRange, bookingId);
+            
+            const bookingKey = `${date}-${period}-${slotType}`;
+            const existingBooking = bookings[bookingKey];
+            
+            if (existingBooking) {
+                // Edit existing booking
+                currentBooking = { id: existingBooking.id, date, period, slotType, timeRange };
+                document.getElementById('modal-title').textContent = 'Edit Booking';
+                document.getElementById('booking-details').innerHTML = `<p><strong>Edit Booking:</strong></p><p>Date: ${formatDateForDisplay(date)}</p><p>Period: ${period}</p><p>Slot: ${slotType}</p><p>Time: ${timeRange}</p>`;
+                document.getElementById('teacherName').value = existingBooking.teacherName;
+                document.getElementById('classSubject').value = existingBooking.classSubject;
+                document.getElementById('notes').value = existingBooking.notes || '';
+                document.getElementById('delete-booking-btn').style.display = 'inline-block';
+                document.getElementById('save-booking-btn').textContent = 'Update Booking';
+            } else {
+                // Check for conflicts before allowing new booking
+                const conflicts = checkForConflicts(date, period, slotType);
+                
+                if (conflicts.length > 0) {
+                    let conflictMessage = 'This time slot conflicts with existing bookings:
+
+';
+                    conflicts.forEach(conflict => {
+                        conflictMessage += `• ${conflict.teacherName} - ${conflict.classSubject} (${conflict.slotType})
+`;
+                    });
+                    alert(conflictMessage);
+                    return;
+                }
+                
+                // New booking
+                currentBooking = { date, period, slotType, timeRange };
+                document.getElementById('modal-title').textContent = 'New Booking';
+                document.getElementById('booking-details').innerHTML = `<p><strong>New Booking:</strong></p><p>Date: ${formatDateForDisplay(date)}</p><p>Period: ${period}</p><p>Slot: ${slotType}</p><p>Time: ${timeRange}</p>`;
+                document.getElementById('teacherName').value = '';
+                document.getElementById('classSubject').value = '';
+                document.getElementById('notes').value = '';
+                document.getElementById('delete-booking-btn').style.display = 'none';
+                document.getElementById('save-booking-btn').textContent = 'Save Booking';
+            }
+            
+            document.getElementById('bookingModal').style.display = 'block';
+        }
+
+        // Submit booking
+        async function submitBooking() {
+            const teacherName = document.getElementById('teacherName').value;
+            const classSubject = document.getElementById('classSubject').value;
+            const notes = document.getElementById('notes').value;
+            
+            if (!teacherName || !classSubject) {
+                alert('Please fill in Teacher Name and Class/Subject');
+                return;
+            }
+            
+            const bookingData = {
+                date: currentBooking.date,
+                period: currentBooking.period,
+                slotType: currentBooking.slotType,
+                timeRange: currentBooking.timeRange,
+                teacherName,
+                classSubject,
+                notes,
+                timestamp: new Date().toISOString()
+            };
+
+            let response;
+            let message;
+
+            try {
+                if (currentBooking.id) {
+                    // Update existing booking
+                    response = await fetch(`${BASE_URL}/bookings/${currentBooking.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(bookingData),
+                    });
+                    message = 'Booking updated!';
+                } else {
+                    // Create new booking
+                    response = await fetch(`${BASE_URL}/bookings`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(bookingData),
+                    });
+                    message = 'Booking confirmed!';
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                await generateCalendar(); // Re-fetch and re-render
+                
+                alert(`${message}\n\nTeacher: ${teacherName}\nClass: ${classSubject}\nDate: ${formatDateForDisplay(currentBooking.date)}`);\n                closeBookingModal();
+
+            } catch (error) {
+                console.error('Error submitting booking:', error);
+                alert('Failed to save booking. Please try again.');
+            }
+        }
+
+        // Delete booking
+        async function deleteBooking() {
+            if (!currentBooking.id) {
+                alert('No booking selected for deletion.');
+                return;
+            }
+
+            const existingBooking = bookings[`${currentBooking.date}-${currentBooking.period}-${currentBooking.slotType}`];
+            
+            if (confirm(`Are you sure you want to delete this booking?
+
+Teacher: ${existingBooking.teacherName}
+Class: ${existingBooking.classSubject}
+Date: ${formatDateForDisplay(currentBooking.date)}`)) {
+                try {
+                    const response = await fetch(`${BASE_URL}/bookings/${currentBooking.id}`, {
+                        method: 'DELETE',
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    await generateCalendar(); // Re-fetch and re-render
+                    alert('Booking deleted successfully!');
+                    closeBookingModal();
+
+                } catch (error) {
+                    console.error('Error deleting booking:', error);
+                    alert('Failed to delete booking. Please try again.');
+                }
+            }
+        }
+
+        // Close modal
+        function closeBookingModal() {
+            document.getElementById('bookingModal').style.display = 'none';
+        }
+
+        // Format date for display
+        function formatDateForDisplay(dateString) {
+            const date = new Date(dateString);
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
+        }
+
+        // Navigation functions
+        function previousWeek() {
+            currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+            updateWeekDisplay();
+            generateCalendar();
+        }
+
+        function nextWeek() {
+            currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+            updateWeekDisplay();
+            generateCalendar();
+        }
+
+        function updateWeekDisplay() {
+            const endDate = new Date(currentWeekStart);
+            endDate.setDate(currentWeekStart.getDate() + 4);
+            const startStr = currentWeekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            const endStr = endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            document.getElementById('current-week').textContent = `Week of ${startStr} - ${endStr}`;
+        }
+
+        // Data functions (same as original)
+        function getDayTypeForDate(date) {
+            const dayTypeData = {
+                '2025-08-11': 'No School',
+                '2025-08-12': 'B Day',
+                '2025-08-13': 'No School',
+                '2025-08-14': 'A Day',
+                '2025-08-15': 'B Day',
+                '2025-08-18': 'A Day',
+                '2025-08-19': 'B Day',
+                '2025-08-20': 'A Day - Early Out',
+                '2025-08-21': 'B Day',
+                '2025-08-22': 'A Day'
+            };
+            
+            const dateString = date.toISOString().split('T')[0];
+            return dayTypeData[dateString] || 'A Day';
+        }
+
+        function getNotesForDate(date) {
+            const notesData = {
+                '2025-08-11': 'No School',
+                '2025-08-13': 'No School',
+                '2025-08-14': 'First Day of School',
+                '2025-08-20': 'Early Out',
+                '2025-08-27': 'Early Out'
+            };
+            
+            const dateString = date.toISOString().split('T')[0];
+            return notesData[dateString] || '';
+        }
+
+        // Update storage status display
+        function updateStorageStatus() {
+            const statusElement = document.getElementById('storage-status');
+            if (statusElement) {
+                if (Object.keys(bookings).length > 0) {
+                    statusElement.textContent = `✅ ${Object.keys(bookings).length} bookings loaded from backend`;
+                    statusElement.style.color = '#28a745';
+                } else {
+                    statusElement.textContent = '📝 No bookings found in backend';
+                    statusElement.style.color = '#B3A369';
+                }
+            }
+        }
+
+        // Initialize
+        updateWeekDisplay();
+        generateCalendar(); // This now calls fetchBookings internally
+        
+        console.log('Dynamic Calendar System Ready!');
+    </script>
+</body>
+</html> 
